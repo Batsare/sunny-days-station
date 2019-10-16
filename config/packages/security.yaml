@@ -1,0 +1,31 @@
+security:
+  firewalls:
+    dev:
+      pattern: ^/(_(profiler|wdt)|css|images|js)/
+      security: false
+    main:
+      anonymous: ~
+      logout: ~
+
+      guard:
+        authenticators:
+          - App\Security\TokenAuthenticator
+      stateless: true
+
+
+  encoders:
+    App\Entity\User:
+      algorithm: argon2i
+
+  providers:
+    # used to reload user from session & other features (e.g. switch_user)
+    app_user_provider:
+      entity:
+        class: App\Entity\User
+        property: email
+
+
+  access_control:
+    - { path: ^/api/menu, roles: IS_AUTHENTICATED_FULLY }
+    - { path: ^/api/article, roles: IS_AUTHENTICATED_FULLY }
+    - { path: ^/api/users, roles: IS_AUTHENTICATED_ANONYMOUSLY }

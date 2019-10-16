@@ -1,0 +1,40 @@
+stages:
+- build
+- deploy
+
+Installation des dependances:
+  stage: build
+  tags:
+    - ssh
+  script:
+  # Create required structure if missing
+  - mkdir -p /var/www/shared
+  - mkdir -p /var/www/releases
+  - mkdir -p /var/www/releases/$CI_COMMIT_SHA
+
+  # Clone git branch, force reset to the current commit and remove git files
+  - rm -rf /var/www/releases/$CI_COMMIT_SHA/* /var/www/releases/$CI_COMMIT_SHA/.env
+  - cd /var/www/releases/$CI_COMMIT_SHA
+  - git clone -b develop git@gitlab.com:sunny-days-station/sunny-days-station-cms.git .
+  - git reset --hard $CI_COMMIT_SHA
+  - rm -rf .git*
+  - composer install --no-dev --optimize-autoloader
+  - php bin/console cache:clear --env=prod --no-debug
+
+Deploiement:
+  stage: deploy
+  tags:
+    - ssh
+  only:
+  - master
+  script:
+  # Update symlink
+  - cd /var/www/html
+  - rm -f sunny-days-station
+  - ln -s "../releases/$CI_COMMIT_SHA" ./sunny-days-station
+
+  # Remove old releases (keep 5 last releases)
+  - cd "/var/www/releases/"
+  - "directories=$(ls -t -d * | tail -n +6)"
+  - 'if [[ $directories ]]; then echo "Suppression release :"; echo ${directories}; sudo rm -rf $directories; fi'
+  - "unset directories"
